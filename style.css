@@ -196,9 +196,11 @@ textarea, input { font-weight: 800; }
 .screen-auth {
   align-items: center;
   justify-content: center;
+  /* CSS の url() は style.css と同じ階層を基準に解決される。
+     "./" を付けないシンプル相対パスが GitHub Pages を含めて最も確実。 */
   background:
     linear-gradient(rgba(255,248,222,0.5), rgba(255,248,222,0.5)),
-    url("./images/title-bg.png") center/cover no-repeat,
+    url("images/title-bg.png") center/cover no-repeat,
     #d4a96a;
   position: relative;
   overflow: hidden;
@@ -290,7 +292,7 @@ textarea, input { font-weight: 800; }
   justify-content: center;
   background:
     linear-gradient(rgba(255,248,222,0.4), rgba(255,248,222,0.4)),
-    url("./images/title-bg.png") center/cover no-repeat,
+    url("images/title-bg.png") center/cover no-repeat,
     #d4a96a;
   position: relative;
   overflow: hidden;

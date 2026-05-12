@@ -23,14 +23,23 @@
 const PASSWORD = '6666';
 const AI_LINK  = 'https://chat.openai.com/';
 
-// 画像パスは「HTML からの相対パス」で記述します。
-// 先頭に "./" を付けることで、Cursor の内部プレビューや file:// 直接表示でも
-// 確実に解決できます。GitHub Pages（リポジトリ配下のサブパス配信）でも
-// 同じ書き方で動作します。
+/* ========== アセットURL解決 ==========
+   ローカル(file://)、Cursorプレビュー、GitHub Pages（サブパス配信を含む）の
+   すべてで動作するよう、画像パスを document.baseURI を基準に絶対URL化する。
+   ※ document.baseURI は <base> タグや末尾スラッシュの有無を吸収してくれる。 */
+const ASSET_BASE = new URL('.', document.baseURI).href;
+function assetURL(relPath) {
+  return new URL(relPath, ASSET_BASE).href;
+}
+
 const RESOURCES = [
-  { id: 1, label: '資料1', image: './images/sample1.png', caption: '南蛮貿易図屏風（資料1）' },
-  { id: 2, label: '資料2', image: './images/sample2.png', caption: '南蛮貿易図屏風（資料2）' },
+  { id: 1, label: '資料1', image: assetURL('images/sample1.png'), caption: '南蛮貿易図屏風（資料1）' },
+  { id: 2, label: '資料2', image: assetURL('images/sample2.png'), caption: '南蛮貿易図屏風（資料2）' },
 ];
+
+console.log('[南蛮貿易] アセットの基準URL:', ASSET_BASE);
+console.log('[南蛮貿易] 資料1の画像URL:', RESOURCES[0].image);
+console.log('[南蛮貿易] 資料2の画像URL:', RESOURCES[1].image);
 
 const CLICK_POINTS = {
   // ========== 資料1 ==========
@@ -265,7 +274,8 @@ function renderResourceCards() {
 
     card.innerHTML = `
       <img class="resource-card-image" src="${res.image}" alt="${res.caption}"
-           onerror="this.alt='画像が読み込めません: ${res.image}'; this.style.height='240px'; console.error('画像読み込み失敗: ${res.image}');">
+           data-src="${res.image}"
+           onerror="this.alt='画像が読み込めません'; this.style.height='240px'; console.error('[南蛮貿易] 画像読み込み失敗:', this.dataset.src, '→ 実際のリクエストURL:', this.src);">
       <div class="resource-card-body">
         <div class="resource-label">
           <span class="resource-badge">${res.label}</span>
@@ -313,8 +323,8 @@ function setupExploreScreen(round) {
     img.src = resource.image;
     img.alt = resource.caption;
     img.onerror = () => {
-      img.alt = `画像が読み込めません: ${resource.image}`;
-      console.error(`画像読み込み失敗: ${resource.image}`);
+      img.alt = '画像が読み込めません';
+      console.error('[南蛮貿易] 画像読み込み失敗:', resource.image, '→ 実際のリクエストURL:', img.src);
     };
   }
 
