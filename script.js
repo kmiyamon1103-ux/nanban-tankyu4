@@ -32,14 +32,38 @@ function assetURL(relPath) {
   return new URL(relPath, ASSET_BASE).href;
 }
 
+/* 画像はまず "images/xxx.png" を試し、失敗したらルート直下 "xxx.png" を試す。
+   この2段フォールバックで「images/フォルダにある場合」と
+   「ルート直下にバラバラに置かれた場合」の両方で動く。 */
+function applyImageFallback(imgEl, fileName) {
+  const primary  = assetURL('images/' + fileName);
+  const fallback = assetURL(fileName);
+  imgEl.src = primary;
+  imgEl.onerror = function () {
+    if (this.dataset.triedFallback) {
+      console.error('[南蛮貿易] 画像読み込み失敗:', fileName,
+        '→ どちらのURLも見つかりませんでした:', primary, '/', fallback);
+      this.alt = '画像が読み込めません';
+      this.style.height = '240px';
+      this.onerror = null;
+      return;
+    }
+    this.dataset.triedFallback = '1';
+    console.warn('[南蛮貿易] フォールバック試行:', primary, '→', fallback);
+    this.src = fallback;
+  };
+}
+
 const RESOURCES = [
-  { id: 1, label: '資料1', image: assetURL('images/sample1.png'), caption: '南蛮貿易図屏風（資料1）' },
-  { id: 2, label: '資料2', image: assetURL('images/sample2.png'), caption: '南蛮貿易図屏風（資料2）' },
+  { id: 1, label: '資料1', file: 'sample1.png', caption: '南蛮貿易図屏風（資料1）' },
+  { id: 2, label: '資料2', file: 'sample2.png', caption: '南蛮貿易図屏風（資料2）' },
 ];
 
 console.log('[南蛮貿易] アセットの基準URL:', ASSET_BASE);
-console.log('[南蛮貿易] 資料1の画像URL:', RESOURCES[0].image);
-console.log('[南蛮貿易] 資料2の画像URL:', RESOURCES[1].image);
+console.log('[南蛮貿易] 試行する画像URL（優先）:',
+  assetURL('images/sample1.png'), '/', assetURL('images/sample2.png'));
+console.log('[南蛮貿易] フォールバック画像URL:',
+  assetURL('sample1.png'), '/', assetURL('sample2.png'));
 
 const CLICK_POINTS = {
   // ========== 資料1 ==========
@@ -273,9 +297,7 @@ function renderResourceCards() {
     if (state.selectedResource === res.id) card.classList.add('selected');
 
     card.innerHTML = `
-      <img class="resource-card-image" src="${res.image}" alt="${res.caption}"
-           data-src="${res.image}"
-           onerror="this.alt='画像が読み込めません'; this.style.height='240px'; console.error('[南蛮貿易] 画像読み込み失敗:', this.dataset.src, '→ 実際のリクエストURL:', this.src);">
+      <img class="resource-card-image" alt="${res.caption}">
       <div class="resource-card-body">
         <div class="resource-label">
           <span class="resource-badge">${res.label}</span>
@@ -284,6 +306,8 @@ function renderResourceCards() {
         <div class="resource-check">✓</div>
       </div>
     `;
+    const imgEl = card.querySelector('.resource-card-image');
+    applyImageFallback(imgEl, res.file);
     card.addEventListener('click', () => selectResource(res.id));
     grid.appendChild(card);
   });
@@ -320,12 +344,9 @@ function setupExploreScreen(round) {
 
   const img = document.querySelector(`.resource-image[data-img="${round}"]`);
   if (img) {
-    img.src = resource.image;
     img.alt = resource.caption;
-    img.onerror = () => {
-      img.alt = '画像が読み込めません';
-      console.error('[南蛮貿易] 画像読み込み失敗:', resource.image, '→ 実際のリクエストURL:', img.src);
-    };
+    delete img.dataset.triedFallback; // 再表示時にフォールバック状態をリセット
+    applyImageFallback(img, resource.file);
   }
 
   zoomState[round] = 1;
